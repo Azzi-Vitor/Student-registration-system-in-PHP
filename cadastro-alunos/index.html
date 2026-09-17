@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Alunos em PHP (GET/POST + JSON)</title>
+    <link rel="stylesheet" href="style/style.css">
+</head>
+<body>
+    <form id="alunos-form">
+        <label for="nome-aluno">Nome:</label>
+        <input type="text" id="nome" name="nome" >
+        
+        <label for="nota-aluno">Nota do Aluno:</label>
+        <input type="number" id="nota" name="nota" >
+
+        <label for="disciplina">Disciplina:</label>
+        <input type="text" id="disciplina" name="disciplina" >
+
+        <button type="submit">Cadastrar</button>
+
+        <button type="button" id="limpar-cadastros"> Limpar cadastros </button>
+    </form>
+
+     <table id="tabela-alunos">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Nota</th>
+                <th>Disciplina</th>
+            </tr>
+        </thead>
+        <tbody id="corpo-tabela"></tbody>
+    </table>
+
+    <pre id="resposta"></pre>
+
+    <script>
+        
+        const formulario = document.getElementById('alunos-form');
+        const resposta = document.getElementById('resposta');
+        const corpoTabela = document.getElementById('corpo-tabela');
+        const botaoLimpar = document.getElementById('limpar-cadastros');
+
+
+        function renderizarTabela(alunos) {
+            corpoTabela.innerHTML = '';
+
+            alunos.forEach((aluno) => {
+                const linha = document.createElement('tr');
+                
+                if (Number(aluno.nota) < 6) {
+                   linha.classList.add('nota-baixa');
+                }
+                
+                const celulaNome = document.createElement('td');
+                celulaNome.textContent = aluno.nome;
+
+                const celulaNota = document.createElement('td');
+                celulaNota.textContent = aluno.nota;
+
+                const celulaDisciplina = document.createElement('td');
+                celulaDisciplina.textContent = aluno.disciplina;
+
+                linha.append(celulaNome, celulaNota, celulaDisciplina);
+                corpoTabela.appendChild(linha);
+            });
+        }
+
+        async function carregarAlunos() {
+            const resultado = await fetch('index.php');
+            const alunos = await resultado.json();
+            renderizarTabela(alunos);
+        }
+
+        formulario.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+
+            const nomealuno = document.getElementById('nome').value;
+            const notaaluno = document.getElementById('nota').value;
+            const disciplina = document.getElementById('disciplina').value;
+
+            const resultado = await fetch('index.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nome: nomealuno,
+                    nota: notaaluno,
+                    disciplina: disciplina 
+                })
+            });
+
+            const dados = await resultado.json();
+
+            resposta.textContent = JSON.stringify(dados, null, 2);
+
+            if (resultado.ok) {
+                renderizarTabela(dados);
+                formulario.reset();
+            }
+        });
+
+        botaoLimpar.addEventListener('click', async (evento) => {
+        const confirmar = confirm('Tem certeza que deseja apagar todos os cadastros?');
+
+        if (!confirmar) {
+            return;
+        }
+
+        const resultado = await fetch('index.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                limpar: true
+            })
+        });
+
+            const dados = await resultado.json();
+            resposta.textContent = JSON.stringify(dados, null, 2);
+
+            if (resultado.ok) {
+                renderizarTabela([]);
+            }
+        });
+
+
+        carregarAlunos();
+        
+    </script>
+    
+</body>
+</html>
